@@ -1,9 +1,13 @@
 var bg,bgImg;
 var player, shooterImg, shooter_shooting;
 var zombieImg, zombieGroup
-var gameState = 1
+var gameState = 0
 var bulletCount = 20
 var life = 3
+var counter = 160 
+var startimer = 10
+var refreshIntervalId2
+var refreshIntervalId
 
 function preload(){
   
@@ -16,6 +20,11 @@ function preload(){
   heart1Img = loadAnimation("assets/heart_1.png")
 
   bgImg = loadImage("assets/bg.jpeg")
+  gunshot = loadSound("assets/Gunshot.mp3")
+  win = loadSound("assets/win.mp3")
+  lose =loadSound("assets/Game Over.wav")
+  loseLife = loadSound("assets/Heart Loss.wav")
+
 
 }
 
@@ -23,7 +32,9 @@ function setup() {
 
   
   createCanvas(windowWidth,windowHeight);
-
+  
+    refreshIntervalId = setInterval(timeout, 1000);
+    refreshIntervalId2 = setInterval(timeout2, 1000);
   
 
   //adding the background image
@@ -50,15 +61,16 @@ player = createSprite(displayWidth-1150, displayHeight-300, 50, 50);
 
 function draw() {
   background(0); 
+  
 if (gameState === 1){
-
+drawSprites();
 
 
   //moving the player up and down and making the game mobile compatible using touches
-  if(keyDown("UP_ARROW")||touches.length>0){
+  if((keyDown("UP_ARROW")||touches.length>0)&&player.y > height-300){
     player.y = player.y-15
   }
-  if(keyDown("DOWN_ARROW")||touches.length>0){
+  if((keyDown("DOWN_ARROW")||touches.length>0)&&player.y < height-75){
    player.y = player.y+15
   }
 
@@ -74,6 +86,7 @@ if (gameState === 1){
   else if(keyWentUp("space")){
     player.addImage(shooterImg)
     bulletCount-=1
+    gunshot.play()
     spawnBullets()
   }
 spawnZombies();
@@ -96,20 +109,30 @@ spawnZombies();
    if (zombieGroup.get(z)!=undefined){
      if (zombieGroup.get(z).isTouching(player)){
        zombieGroup.get(z).destroy()
+       loseLife.play()
        life-=1
        if (life == 2 ){
         hearts.changeAnimation("Life:2",heart2Img);
+        loseLife.play()
        }
        if (life == 1){
         hearts.changeAnimation("Life:1",heart1Img);
+        loseLife.play()
        }
      }
    }
  }
 
+ if (counter === 0){
+   gameState = 3
+   
+ }
+
  if (bulletCount <1 || life == 0){
    gameState = 2
+   lose.play()
  }
+
 
 
 
@@ -118,14 +141,45 @@ spawnZombies();
 if (gameState === 2){
   bg.visible=false;
   hearts.visible=false;
+  zombieGroup.setVelocityXEach(0);
+  bulletGroup.destroyEach();
+  clearInterval(refreshIntervalId)
 }
-drawSprites();
+
+
+
+
+
+if (gameState === 3){
+  bg.visible=false;
+  hearts.visible=false;
+  zombieGroup.destroyEach();
+  bulletGroup.destroyEach();
+  textSize(100)
+  textAlign(CENTER)
+  fill("Lime")
+  text("You Win!", windowWidth/2, windowHeight/2)
+  
+}
+
+if (gameState === 0){  
+  textSize(50)
+  textAlign(CENTER)
+  fill("white")
+  text("How to play: \n SPACE to shoot the zombies. \n UP ARROW to move up. \n DOWN ARROW to move down. \n You have only 20 bullets... \n Survive until the time runs out! \n" + startimer, windowWidth/2, windowHeight/4)
+
+  if (startimer === 0){
+    gameState = 1
+    
+  }
+}
 
 textSize(25)
 fill("Red")
 textFont("robus")
 text("Bullets: " + bulletCount, windowWidth/4, 20)
-
+fill("Yellow")
+text("Time Left: " + counter, windowWidth/2, 20)
 
 }
 
@@ -146,4 +200,12 @@ function spawnBullets(){
   bullet.velocityX = 5
   bullet.scale = 0.03
   bulletGroup.add(bullet)
+}
+
+function timeout(){
+  counter--
+}
+
+function timeout2(){
+  startimer--
 }
